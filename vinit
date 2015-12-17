@@ -1,0 +1,2431 @@
+package com.parser;
+
+//please try these settings by going to Window > Preferences > MyEclipse > Servers > Integrated Sandbox > MyEclipse Tomcat 6 > JDK. In the Optional Java VM Arguments section you can try adding :
+//-Xms512M -Xmx1024M
+
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.io.Reader;
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.Statement;
+import java.util.ArrayList;
+import java.util.Iterator;
+import java.util.List;
+
+import javax.xml.parsers.ParserConfigurationException;
+import javax.xml.parsers.SAXParser;
+import javax.xml.parsers.SAXParserFactory;
+
+import org.apache.log4j.Logger;
+import org.hibernate.SQLQuery;
+import org.hibernate.Session;
+import org.hibernate.Transaction;
+import org.hibernate.type.LongType;
+import org.hibernate.type.StringType;
+import org.xml.sax.Attributes;
+import org.xml.sax.InputSource;
+import org.xml.sax.SAXException;
+import org.xml.sax.helpers.DefaultHandler;
+
+import com.shift.mobility.database.HibernateConnectionFactory;
+
+public class ReadXmlFileViaSAXParser extends DefaultHandler {
+	private App app;
+	private Header header;
+	private Footer footer;
+	private String temp;
+	private String temp1 = " ";
+	private String param1 = " ";
+	private String uom1 = " ";
+	public ArrayList<App> appList = new ArrayList<App>();
+	public ArrayList<Header> headerList = new ArrayList<Header>();
+	public ArrayList<Footer> footerList = new ArrayList<Footer>();
+	private static final Logger logger = Logger
+			.getLogger(ReadXmlFileViaSAXParser.class.getName());
+
+	/*
+	 * public static void main(String[] args) throws IOException, SAXException,
+	 * ParserConfigurationException { new
+	 * ReadXmlFileViaSAXParser().parseXMLData(); }
+	 */
+
+	/** The main method sets things up for parsing */
+	public void parseXMLData(String xmlFile, String actualFileName,
+			double version) throws IOException, SAXException,
+			ParserConfigurationException {
+
+		// Create a "parser factory" for creating SAX parsers
+		SAXParserFactory spfac = SAXParserFactory.newInstance();
+
+		// Now use the parser factory to create a SAXParser object
+		SAXParser sp = spfac.newSAXParser();
+
+		// Create an instance of this class; it defines all the handler methods
+		ReadXmlFileViaSAXParser handler = new ReadXmlFileViaSAXParser();
+		logger.info("Executing ReadXmlFileViaSAXParser");
+
+		// Finally, tell the parser to parse the input and notify the handler
+
+		// System.out.println("ActualFileName (in Readxmlfileviasaxparser ) ==="+actualFileName);
+		// ======================================
+
+		File file = new File(xmlFile);
+		InputStream inputStream = new FileInputStream(file);
+		Reader reader = new InputStreamReader(inputStream, "UTF-8");
+
+		InputSource is = new InputSource(reader);
+		is.setEncoding("UTF-8");
+		// ========================================
+
+		sp.parse(is, handler);
+		// sp.parse("Interstate-Firestone.xml", handler);
+		handler.getHeaderListData();
+		// handler.readList();
+		handler.storeDataInDataBank(actualFileName, version);
+		handler.getFooterListData();
+
+	}
+
+	/*
+	 * When the parser encounters plain text (not XML elements), it calls(this
+	 * method, which accumulates them in a string buffer
+	 */
+	public void characters(char[] buffer, int start, int length) {
+		temp = new String(buffer, start, length);
+		// temp1 =temp1+temp;
+	}
+
+	/*
+	 * Every time the parser encounters the beginning of a new element, it calls
+	 * this method, which resets the string buffer
+	 */
+	public void startElement(String uri, String localName, String qName,
+			Attributes attributes) throws SAXException {
+		temp = "";
+
+		if (qName.equalsIgnoreCase("Header")) {
+			header = new Header();
+
+		}
+		if (qName.equalsIgnoreCase("Footer")) {
+			footer = new Footer();
+
+		}
+		if (qName.equalsIgnoreCase("App")) {
+			temp1 = "";
+			param1 = "";
+			uom1 = "";
+			app = new App();
+			app.setAction(attributes.getValue("action"));
+			app.setId(attributes.getValue("id"));
+			app.setRef(attributes.getValue("ref"));
+			app.setValidate(attributes.getValue("validate"));
+
+		}
+
+		if (qName.equalsIgnoreCase("BaseVehicle")) {
+
+			app.setBaseVehicle_id(attributes.getValue("id"));
+
+		}
+		if (qName.equalsIgnoreCase("Make")) {
+
+			app.setMake_id(attributes.getValue("id"));
+
+		}
+		if (qName.equalsIgnoreCase("Model")) {
+
+			app.setModel_id(attributes.getValue("id"));
+
+		}
+		if (qName.equalsIgnoreCase("SubModel")) {
+
+			app.setSubModel_id(attributes.getValue("id"));
+
+		}
+		if (qName.equalsIgnoreCase("VehicleType")) {
+
+			app.setVehicleType_id(attributes.getValue("id"));
+
+		}
+		if (qName.equalsIgnoreCase("MfrBodyCode")) {
+
+			app.setMfrBodyCode_id(attributes.getValue("id"));
+
+		}
+		if (qName.equalsIgnoreCase("BodyNumDoors")) {
+
+			app.setBodyNumDoors_id(attributes.getValue("id"));
+
+		}
+		if (qName.equalsIgnoreCase("BodyType")) {
+
+			app.setBodyType_id(attributes.getValue("id"));
+
+		}
+
+		if (qName.equalsIgnoreCase("BedType")) {
+
+			app.setBedType_id(attributes.getValue("id"));
+
+		}
+
+		if (qName.equalsIgnoreCase("DriveType")) {
+
+			app.setDriveType_id(attributes.getValue("id"));
+
+		}
+		if (qName.equalsIgnoreCase("EngineBase")) {
+
+			app.setEngineBase_id(attributes.getValue("id"));
+
+		}
+		if (qName.equalsIgnoreCase("EngineDesignation")) {
+
+			app.setEngineDesignation_id(attributes.getValue("id"));
+
+		}
+		if (qName.equalsIgnoreCase("EngineVIN")) {
+
+			app.setEngineVIN_id(attributes.getValue("id"));
+
+		}
+		if (qName.equalsIgnoreCase("ValvesPerEngine")) {
+
+			app.setValvesPerEngine_id(attributes.getValue("id"));
+
+		}
+		if (qName.equalsIgnoreCase("EngineVersion")) {
+
+			app.setEngineVersion_id(attributes.getValue("id"));
+
+		}
+		if (qName.equalsIgnoreCase("PowerOutput")) {
+
+			app.setPowerOutput_id(attributes.getValue("id"));
+
+		}
+		if (qName.equalsIgnoreCase("EngineMfr")) {
+
+			app.setEngineMfr_id(attributes.getValue("id"));
+
+		}
+		if (qName.equalsIgnoreCase("ValvesPerEngine")) {
+
+			app.setValvesPerEngine_id(attributes.getValue("id"));
+
+		}
+		if (qName.equalsIgnoreCase("FuelDeliveryType")) {
+
+			app.setFuelDeliveryType_id(attributes.getValue("id"));
+
+		}
+		if (qName.equalsIgnoreCase("FuelDeliverySubType")) {
+
+			app.setFuelDeliverySubType_id(attributes.getValue("id"));
+
+		}
+		if (qName.equalsIgnoreCase("FuelSystemControlType")) {
+
+			app.setFuelSystemControlType_id(attributes.getValue("id"));
+
+		}
+		if (qName.equalsIgnoreCase("FuelSystemDesign")) {
+
+			app.setFuelSystemDesign_id(attributes.getValue("id"));
+
+		}
+		if (qName.equalsIgnoreCase("Aspiration")) {
+
+			app.setAspiration_id(attributes.getValue("id"));
+
+		}
+		if (qName.equalsIgnoreCase("CylinderHeadType")) {
+
+			app.setCylinderHeadType_id(attributes.getValue("id"));
+
+		}
+		if (qName.equalsIgnoreCase("FuelType")) {
+
+			app.setFuelType_id(attributes.getValue("id"));
+
+		}
+		if (qName.equalsIgnoreCase("IgnitionSystemType")) {
+
+			app.setIgnitionSystemType_id(attributes.getValue("id"));
+
+		}
+
+		if (qName.equalsIgnoreCase("TransmissionMfrCode")) {
+
+			app.setTransmissionMfrCode_id(attributes.getValue("id"));
+
+		}
+		if (qName.equalsIgnoreCase("TransmissionBase")) {
+
+			app.setTransmissionBase_id(attributes.getValue("id"));
+
+		}
+		if (qName.equalsIgnoreCase("TransmissionNumSpeeds")) {
+
+			app.setTransmissionNumSpeeds_id(attributes.getValue("id"));
+
+		}
+		if (qName.equalsIgnoreCase("TransElecControlled")) {
+
+			app.setTransElecControlled_id(attributes.getValue("id"));
+
+		}
+		if (qName.equalsIgnoreCase("TransmissionMfr")) {
+
+			app.setTransmissionMfr_id(attributes.getValue("id"));
+
+		}
+		if (qName.equalsIgnoreCase("TransmissionType")) {
+
+			app.setTransmissionType_id(attributes.getValue("id"));
+
+		}
+		if (qName.equalsIgnoreCase("TransmissionControlType")) {
+
+			app.setTransmissionControlType_id(attributes.getValue("id"));
+
+		}
+		if (qName.equalsIgnoreCase("BedLength")) {
+
+			app.setBedLength_id(attributes.getValue("id"));
+
+		}
+		if (qName.equalsIgnoreCase("BedType")) {
+
+			app.setBedType_id(attributes.getValue("id"));
+
+		}
+		if (qName.equalsIgnoreCase("WheelBase")) {
+
+			app.setWheelBase_id(attributes.getValue("id"));
+
+		}
+
+		if (qName.equalsIgnoreCase("BrakeSystem")) {
+
+			app.setBrakeSystem_id(attributes.getValue("id"));
+
+		}
+		if (qName.equalsIgnoreCase("FrontBrakeType")) {
+
+			app.setFrontBrakeType_id(attributes.getValue("id"));
+
+		}
+		if (qName.equalsIgnoreCase("RearBrakeType")) {
+
+			app.setRearBrakeType_id(attributes.getValue("id"));
+
+		}
+		if (qName.equalsIgnoreCase("BrakeABS")) {
+
+			app.setBrakeABS_id(attributes.getValue("id"));
+
+		}
+		if (qName.equalsIgnoreCase("FrontSpringType")) {
+
+			app.setFrontSpringType_id(attributes.getValue("id"));
+
+		}
+		if (qName.equalsIgnoreCase("RearSpringType")) {
+
+			app.setRearSpringType_id(attributes.getValue("id"));
+
+		}
+		if (qName.equalsIgnoreCase("SteeringSystem")) {
+
+			app.setSteeringSystem_id(attributes.getValue("id"));
+
+		}
+		if (qName.equalsIgnoreCase("SteeringType")) {
+
+			app.setSteeringType_id(attributes.getValue("id"));
+
+		}
+		if (qName.equalsIgnoreCase("Region")) {
+
+			app.setRegion_id(attributes.getValue("id"));
+
+		}
+		if (qName.equalsIgnoreCase("Qual")) {
+
+			app.setQual_id(attributes.getValue("id"));
+
+		}
+		if (qName.equalsIgnoreCase("param")) {
+			param1 = param1 + attributes.getValue("value");
+			if (param1.equalsIgnoreCase(" null"))
+				param1 = " ";
+			else {
+				app.setParam_value(param1);
+				param1 = param1 + ",";
+			}
+			uom1 = uom1 + attributes.getValue("uom");
+			if (uom1.equalsIgnoreCase(" null"))
+				uom1 = " ";
+			else {
+				app.setParam_uom(uom1);
+				uom1 = uom1 + ",";
+			}
+
+		}
+		if (qName.equalsIgnoreCase("Note")) {
+
+			app.setNote_id(attributes.getValue("id"));
+			app.setNote_lang(attributes.getValue("lang"));
+
+		}
+		if (qName.equalsIgnoreCase("PartType")) {
+
+			app.setPartType_id(attributes.getValue("id"));
+
+		}
+		if (qName.equalsIgnoreCase("Part")) {
+
+			app.setPart_BrandAAIAID(attributes.getValue("BrandAAIAID"));
+
+		}
+		if (qName.equalsIgnoreCase("Position")) {
+
+			app.setPosition_id(attributes.getValue("id"));
+
+		}
+		if (qName.equalsIgnoreCase("Years")) {
+
+			app.setYears_from(attributes.getValue("from"));
+			app.setYears_to(attributes.getValue("to"));
+
+		}
+
+	}
+
+	/*
+	 * When the parser encounters the end of an element, it calls this method
+	 */
+	public void endElement(String uri, String localName, String qName)
+			throws SAXException {
+
+		if (qName.equalsIgnoreCase("Header")) {
+			// add it to the list
+			headerList.add(header);
+
+		}
+		if (qName.equalsIgnoreCase("Footer")) {
+			// add it to the list
+			footerList.add(footer);
+
+		} else if (qName.equalsIgnoreCase("Company")) {
+			header.setCompany(temp);
+		} else if (qName.equalsIgnoreCase("SenderName")) {
+			header.setSenderName(temp);
+		} else if (qName.equalsIgnoreCase("SenderPhone")) {
+			header.setSenderPhone(temp);
+		} else if (qName.equalsIgnoreCase("SenderPhoneExt")) {
+			header.setSenderPhoneExt(temp);
+		} else if (qName.equalsIgnoreCase("TransferDate")) {
+			header.setTrasnsferDate(temp);
+		} else if (qName.equalsIgnoreCase("BrandAAIAID")) {
+			header.setBrandAAIAID(temp);
+		} else if (qName.equalsIgnoreCase("DocumentTitle")) {
+			header.setDocumentTitle(temp);
+		} else if (qName.equalsIgnoreCase("DocFormNumber")) {
+			header.setDocFormNumber(temp);
+		} else if (qName.equalsIgnoreCase("EffectiveDate")) {
+			header.setEffectiveDate(temp);
+		} else if (qName.equalsIgnoreCase("SubmissionType")) {
+			header.setSubmissionType(temp);
+		} else if (qName.equalsIgnoreCase("VcdbVersionDate")) {
+			header.setVcdbVersionDate(temp);
+		} else if (qName.equalsIgnoreCase("QdbVersionDate")) {
+			header.setQcdbVersionDate(temp);
+		} else if (qName.equalsIgnoreCase("PcdbVersionDate")) {
+			header.setPcdbVersionDate(temp);
+		} else if (qName.equalsIgnoreCase("ApprovedFor")) {
+			header.setApprovedFor(temp);
+		} else if (qName.equalsIgnoreCase("MapperCompany")) {
+			header.setMapperCompany(temp);
+		} else if (qName.equalsIgnoreCase("MapperContact")) {
+			header.setMapperContact(temp);
+		} else if (qName.equalsIgnoreCase("MapperPhone")) {
+			header.setMapperPhone(temp);
+		} else if (qName.equalsIgnoreCase("MapperPhoneExt")) {
+			header.setMapperPhoneExt(temp);
+		} else if (qName.equalsIgnoreCase("MapperEmail")) {
+			header.setMapperEmail(temp);
+		}
+
+		// ========================================
+		if (qName.equalsIgnoreCase("App")) {
+			// add it to the list
+			appList.add(app);
+
+		} else if (qName.equalsIgnoreCase("text")) {
+			app.setText(temp);
+
+		} else if (qName.equalsIgnoreCase("Note")) {
+
+			app.setNote(temp1 + " " + temp);
+			temp1 = temp1 + temp;
+		} else if (qName.equalsIgnoreCase("Qty")) {
+			app.setQty(temp);
+		} else if (qName.equalsIgnoreCase("Part")) {
+			app.setPart(temp);
+		} else if (qName.equalsIgnoreCase("MfrLabel")) {
+			app.setMfrLabel(temp);
+		} else if (qName.equalsIgnoreCase("DisplayOrder")) {
+			app.setDisplayOrder(temp);
+		} else if (qName.equalsIgnoreCase("AssetName")) {
+			app.setAssetName(temp);
+		} else if (qName.equalsIgnoreCase("AssetItemOrder")) {
+			app.setAssetItemOrder(temp);
+		} else if (qName.equalsIgnoreCase("AssetItemRef")) {
+			app.setAssetItemRef(temp);
+		}
+		if (qName.equalsIgnoreCase("RecordCount")) {
+			footer.setRecordCount(temp);
+		}
+	}
+
+	public String getHeaderListData() {
+		String headerData = header.toString();
+		// System.out.println("HeaderData  :: " + headerData);
+		return headerData;
+	}
+
+	public String getFooterListData() {
+		String footerData = footer.toString();
+		// System.out.println("FooterData  :: " + footerData);
+		return footerData;
+	}
+
+	// ==============================================Save Data in
+	// DataBank=========================
+
+	@SuppressWarnings("unchecked")
+	public void storeDataInDataBank(String actualFileName, double version) {
+		// Connection connection = null;
+		// PreparedStatement stmt = null;
+		System.out.println("==========Save Data in DataBank=============");
+		// ========================= Header
+		// values================================
+		String TrasnsferDate = "";
+		String QdbVersionDate = "";
+		String headerData = getHeaderListData();
+		// System.out.println("headerData:++++++"+headerData);
+		String h1[] = headerData.split("`");
+		String h[] = new String[h1.length];
+		// =================================
+		int k = 0;
+		for (String s : h1) {
+			if (s.equalsIgnoreCase("null")) {
+				s = " ";
+				h[k] = s;
+				k++;
+			} else {
+				h[k] = s;
+				k++;
+			}
+		}
+		// ===================================
+		String Company = h[0];
+		String SenderName = h[1];
+		String SenderPhone = h[2];
+		String SenderPhoneExt = h[3];
+		TrasnsferDate = h[4];
+		String BrandAAIAID = h[5];
+		String DocFormNumber = h[6];
+		String DocumentTitle = h[7];
+		String EffectiveDate = h[8];
+		String ApprovedFor = h[9];
+		String SubmissionType = h[10];
+		String MapperCompany = h[11];
+		String MapperContact = h[12];
+		String MapperPhone = h[13];
+		String MapperPhoneExt = h[14];
+		String MapperEmail = h[15];
+		String VcdbVersionDate = h[16];
+		QdbVersionDate = h[17];
+		String PcdbVersionDate = h[18];
+		// =================================Footer VLAUES===========
+
+		String RecordCount = getFooterListData();
+
+		// ==============================App
+		// Values======================================
+		String action = " ";
+		String id = " ";
+		String ref = " ";
+		String validate = " ";
+		String BaseVehicle_id = " ";
+		String Make_id = " ";
+		String Model_id = " ";
+		String SubModel_id = " ";
+		String VehicleType_id = " ";
+		String MfrBodyCode_id = " ";
+		String BodyNumDoors_id = " ";
+		String BodyType_id = " ";
+		String DriveType_id = " ";
+		String EngineBase_id = " ";
+		String EngineDesignation_id = " ";
+		String EngineVIN_id = " ";
+		String EngineVersion_id = " ";
+		String PowerOutput_id = " ";
+		String EngineMfr_id = " ";
+		String ValvesPerEngine_id = " ";
+		String FuelDeliveryType_id = " ";
+		String FuelDeliverySubType_id = " ";
+		String FuelSystemControlType_id = " ";
+		String FuelSystemDesign_id = " ";
+		String Aspiration_id = " ";
+		String CylinderHeadType_id = " ";
+		String FuelType_id = " ";
+		String IgnitionSystemType_id = " ";
+		String TransmissionMfrCode_id = " ";
+		String TransmissionBase_id = " ";
+		String TransmissionType_id = " ";
+		String TransmissionControlType_id = " ";
+		String TransmissionNumSpeeds_id = " ";
+		String TransElecControlled_id = " ";
+		String TransmissionMfr_id = " ";
+		@SuppressWarnings("unused")
+		String BedLength_id = " ";
+		String BedType_id = " ";
+		String WheelBase_id = " ";
+		String BrakeSystem_id = " ";
+		String FrontBrakeType_id = " ";
+		String RearBrakeType_id = " ";
+		String BrakeABS_id = " ";
+		String FrontSpringType_id = " ";
+		String RearSpringType_id = " ";
+		String SteeringSystem_id = " ";
+		String SteeringType_id = " ";
+		String Region_id = " ";
+		String Qual_id = " ";
+		String param_value = " ";
+		String param_uom = " ";
+		String text = " ";
+		String Note_id = " ";
+		String Note_lang = " ";
+		String Note = " ";
+		String Qty = " ";
+		String PartType_id = " ";
+		String Part_BrandAAIAID = " ";
+		String Part = " ";
+		String MfrLabel = " ";
+		String Position_id = " ";
+		String DisplayOrder = " ";
+		String AssetName = " ";
+		String AssetItemOrder = " ";
+		String AssetItemRef = " ";
+		String Years_from = " ";
+		String Years_to = " ";
+
+		// ===================================
+		String p_name = " ";
+		String appData = " ";
+		String year_id = " ";
+		String make = " ";
+		String model = " ";
+		String sub_modelName = " ";
+		String liter = " ";
+		String cylinder = " ";
+		String block_type = " ";
+		// ===========================
+		System.out.println(" YOUR XML FILE IS UNDER PROCESSING..............");
+		try {
+			long records = 0;
+			// System.out.println("No of Application :" + appList.size() +
+			// "'.");
+			Iterator<App> it = appList.iterator();
+
+			while (it.hasNext()) {
+				// connection = LoadConnectionDB.getConnection();
+				// System.out.println(it.next().toString());
+				appData = it.next().toString();
+
+				// System.out.println("AppData values::" + appData);
+
+				String app1[] = appData.split("`");
+				String app[] = new String[app1.length];
+				int k1 = 0;
+				for (String s : app1) {
+					// System.out.println("sssssssssssss="+s);
+					if (s.equalsIgnoreCase("null") || s.equalsIgnoreCase("0")
+							|| s == "null") {
+						s = " ";
+						app[k1] = s;
+						k1++;
+					} else {
+						app[k1] = s;
+						k1++;
+					}
+				}
+
+				action = app[0];
+				id = app[1];
+				ref = app[2];
+				validate = app[3];
+				BaseVehicle_id = app[4];
+				year_id = app[5];
+				Make_id = app[6];
+				make = app[7];
+				Model_id = app[8];
+				model = app[9];
+				SubModel_id = app[10];
+				sub_modelName = app[11];
+				liter = app[12];
+				cylinder = app[13];
+				block_type = app[14];
+				VehicleType_id = app[15];
+				MfrBodyCode_id = app[16];
+				BodyNumDoors_id = app[17];
+				BodyType_id = app[18];
+				DriveType_id = app[19];
+				EngineBase_id = app[20];
+				EngineDesignation_id = app[21];
+				EngineVIN_id = app[22];
+				EngineVersion_id = app[23];
+				PowerOutput_id = app[24];
+				EngineMfr_id = app[25];
+				ValvesPerEngine_id = app[26];
+				FuelDeliveryType_id = app[27];
+				FuelDeliverySubType_id = app[28];
+				FuelSystemControlType_id = app[29];
+				FuelSystemDesign_id = app[30];
+				Aspiration_id = app[31];
+				CylinderHeadType_id = app[32];
+				FuelType_id = app[33];
+				IgnitionSystemType_id = app[34];
+				TransmissionMfrCode_id = app[35];
+				TransmissionBase_id = app[36];
+				TransmissionType_id = app[37];
+				TransmissionControlType_id = app[38];
+				TransmissionNumSpeeds_id = app[39];
+				TransElecControlled_id = app[40];
+				TransmissionMfr_id = app[41];
+				BedLength_id = app[42];
+				BedType_id = app[43];
+				WheelBase_id = app[44];
+				BrakeSystem_id = app[45];
+				FrontBrakeType_id = app[46];
+				RearBrakeType_id = app[47];
+				BrakeABS_id = app[48];
+				FrontSpringType_id = app[49];
+				RearSpringType_id = app[50];
+				SteeringSystem_id = app[51];
+				SteeringType_id = app[52];
+				Region_id = app[53];
+				Qual_id = app[54];
+				param_value = app[55];
+				param_uom = app[56];
+				text = app[57];
+				Note_id = app[58];
+				Note_lang = app[59];
+				Note = app[60];
+				Qty = app[61];
+				PartType_id = app[62];
+				p_name = app[63];
+				Part_BrandAAIAID = app[64];
+				Part = app[65];
+				MfrLabel = app[66];
+				Position_id = app[67];
+				DisplayOrder = app[68];
+				AssetName = app[69];
+				AssetItemOrder = app[70];
+				AssetItemRef = app[71];
+				Years_from = app[72];
+				Years_to = app[73];
+				// =======================Create Connection
+				// ==============================
+
+				// Connection connection =LoadConnectionDB.getConnection();
+
+				Session session = HibernateConnectionFactory
+						.getSessionInstance();
+				try {
+					// ========================================== Select Maximum
+					// ID from Table ===============================
+					long maxID = 1;
+					// double version =1.0;
+
+					try {
+
+						System.out.println("max====" + maxID);
+						SQLQuery query = session
+								.createSQLQuery("SELECT MAX(P_ID)FROM BIGIP_PARTS");
+
+						List<Object[]> rows = query.list();
+						if (rows != null && !rows.isEmpty()
+								&& !rows.contains(null)) {
+							for (Object row : rows) {
+
+								maxID = Long.parseLong("" + row);
+								maxID = maxID + 1;
+								System.out.println("maxID==================="
+										+ maxID);
+								// ================version==============
+
+							}
+
+						}
+
+					} catch (Exception e) {
+						e.printStackTrace();
+					}
+
+					// =============================================================================================================
+
+					System.out.println("ActulaFileName=" + actualFileName);
+					System.out
+							.println("                           APPLICATI0N ID   :::   "
+									+ id);
+					logger
+							.info("                           APPLICATI0N ID   :::   "
+									+ id);
+					// System.out.println("PartType_id====" + PartType_id);
+					// records++;
+					try {
+
+						// System.out.println("company="+company);
+						System.out.println("BaseVehicle_id=" + BaseVehicle_id);
+						// System.out.println("id="+rs.getString(3));
+
+						// ============================ Update
+						// Records(19)=================================
+						int selectStatus = 0;
+
+						SQLQuery query = session
+								.createSQLQuery("select company from BIGIP_PARTS where COMPANY=:com AND ACTION=:act AND REF=:ref AND VALIDATE_ID=:vali AND BASEVEHICLE_ID=:bas AND YEAR=:yea AND MAKE_ID=:makid AND MAKE=:mak AND MODEL_ID=:modid AND MODEL=:mod AND SUBMODEL_ID=:subid AND SUB_MODELNAME=:sub AND ENGINEBASE_ID=:eng AND  LITER=:lit AND  CYLINDER=:cyl AND BLOCK_TYPE=:blo AND PARTTYPE_ID=:pid AND  P_NAME=:pname AND PART_BRANDAAIAID=:pbr AND PART=:part AND MFRLABEL=:mfr AND POSITION_ID=:pos AND VEHICLETYPE_ID=:veh AND MFRBODYCODE_ID=:mfrb AND BODYNUMDOORS_ID=:bod AND BODYTYPE_ID=:bodt AND DRIVETYPE_ID=:dri AND ENGINEDESIGNATION_ID=:engd AND ENGINEVIN_ID=:engv AND ENGINEVERSION_ID=:engver AND POWEROUTPUT_ID=:pow AND ENGINEMFR_ID=:engmfr AND VALVESPERENGINE_ID=:valv AND FUELDELIVERYTYPE_ID=:fue AND FUELDELIVERYSUBTYPE_ID=:fues AND FUELSYSTEMCONTROLTYPE_ID=:fuec AND FUELSYSTEMDESIGN_ID=:fued AND ASPIRATION_ID=:asp AND CYLINDERHEADTYPE_ID=:cylh AND FUELTYPE_ID=:fuet  AND IGNITIONSYSTEMTYPE_ID=:ign AND TRANSMISSIONMFRCODE_ID=:tra AND TRANSMISSIONBASE_ID=:trab AND TRANSMISSIONTYPE_ID=:trat AND TRANSMISSIONCONTROLTYPE_ID=:trac AND TRANSMISSIONNUMSPEEDS_ID=:tran AND TRANSELECCONTROLLED_ID=:tracid AND TRANSMISSIONMFR_ID=:tramfr AND BEDTYPE_ID=:bed AND WHEELBASE_ID=:whe AND BRAKESYSTEM_ID=:bra AND FRONTBRAKETYPE_ID=:fro AND REARBRAKETYPE_ID=:rea AND BRAKEABS_ID=:braa AND FRONTSPRINGTYPE_ID=:fros AND REARSPRINGTYPE_ID=:reas AND STEERINGSYSTEM_ID=:ste AND STEERINGTYPE_ID=:stet AND REGION_ID=:reg AND QUAL_ID=:qua AND PARAM_VALUE=:par AND PARAM_UOM=:paru AND TEXT=:tex AND NOTE_ID=:not AND NOTE_LANG=:notl AND NOTE=:note AND QTY=:qty AND DISPLAYORDER=:dis AND ASSETNAME=:ass AND ASSETITEMORDER=:assm AND ASSETITEMREF=:assmrf AND YEARS_FROM=:yeaf AND YEARS_TO=:yeat");
+						query.setString("com", Company);
+						// ===================== APP ELEMENTS(20-)//
+						// ================================
+						query.setString("act", action);
+						query.setString("ref", ref);
+						query.setString("vali", validate);
+						// ====================YMME INFO====================
+						query.setString("bas", BaseVehicle_id);
+						query.setString("yea", year_id);
+						query.setString("makid", Make_id);
+						query.setString("mak", make);
+						query.setString("modid", Model_id);
+						query.setString("mod", model);
+						// ===============SUBMODEL INFO================
+						query.setString("subid", SubModel_id);
+						query.setString("sub", sub_modelName);
+						// ===============Engine Info============
+						query.setString("eng", EngineBase_id);
+						query.setString("lit", liter);
+						query.setString("cyl", cylinder);
+						query.setString("blo", block_type);
+						// ===============PartInfo=================
+						query.setString("pid", PartType_id);
+						query.setString("pname", p_name);
+						query.setString("pbr", Part_BrandAAIAID);
+						query.setString("part", Part);
+						query.setString("mfr", MfrLabel);
+						query.setString("pos", Position_id);
+						// ==============================
+						query.setString("veh", VehicleType_id);
+						query.setString("mfrb", MfrBodyCode_id);
+						query.setString("bod", BodyNumDoors_id);
+						query.setString("bodt", BodyType_id);
+						query.setString("dri", DriveType_id);
+						query.setString("engd", EngineDesignation_id);
+						query.setString("engv", EngineVIN_id);
+						query.setString("engver", EngineVersion_id);
+						query.setString("pow", PowerOutput_id);
+
+						query.setString("engmfr", EngineMfr_id);
+						query.setString("valv", ValvesPerEngine_id);
+						query.setString("fue", FuelDeliveryType_id);
+						query.setString("fues", FuelDeliverySubType_id);
+						query.setString("fuec", FuelSystemControlType_id);
+						query.setString("fued", FuelSystemDesign_id);
+						query.setString("asp", Aspiration_id);
+						query.setString("cylh", CylinderHeadType_id);
+						query.setString("fuet", FuelType_id);
+						query.setString("ign", IgnitionSystemType_id);
+
+						query.setString("tra", TransmissionMfrCode_id);
+						query.setString("trab", TransmissionBase_id);
+						query.setString("trat", TransmissionType_id);
+						query.setString("trac", TransmissionControlType_id);
+						query.setString("tran", TransmissionNumSpeeds_id);
+						query.setString("tracid", TransElecControlled_id);
+						query.setString("tramfr", TransmissionMfr_id);
+						query.setString("bed", BedType_id);
+						query.setString("whe", WheelBase_id);
+						query.setString("bra", BrakeSystem_id);
+
+						query.setString("fro", FrontBrakeType_id);
+						query.setString("rea", RearBrakeType_id);
+						query.setString("braa", BrakeABS_id);
+						query.setString("fros", FrontSpringType_id);
+						query.setString("reas", RearSpringType_id);
+						query.setString("ste", SteeringSystem_id);
+						query.setString("stet", SteeringType_id);
+						query.setString("reg", Region_id);
+						query.setString("qua", Qual_id);
+						query.setString("par", param_value);
+
+						query.setString("paru", param_uom);
+						query.setString("tex", text);
+						query.setString("not", Note_id);
+						query.setString("notl", Note_lang);
+						query.setString("note", Note);
+						query.setString("qty", Qty);
+						query.setString("dis", DisplayOrder);
+						query.setString("ass", AssetName);
+						query.setString("assm", AssetItemOrder);
+						query.setString("assmrf", AssetItemRef);
+
+						query.setString("yeaf", Years_from);
+						query.setString("yeat", Years_to);
+
+						List<Object[]> rows = query.list();
+
+						if (rows.size() > 0) {
+
+							selectStatus = 1;
+						}
+
+						if (selectStatus == 1) {
+
+							System.out.println("Duplicate Records");
+						} else {
+							// =====================================================================================
+							System.out.println("Data Inserted");
+							records++;
+							// String query1 =
+							// "insert into BIGIP_PARTS values(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)";
+
+							SQLQuery stmt = session
+									.createSQLQuery("insert into BIGIP_PARTS values(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)");
+							stmt.setLong(0, maxID);
+							stmt.setString(1, Company);
+							stmt.setString(2, SenderName);
+							stmt.setString(3, SenderPhone);
+							stmt.setString(4, SenderPhoneExt);
+							stmt.setString(5, TrasnsferDate);
+							stmt.setString(6, BrandAAIAID);
+							stmt.setString(7, DocumentTitle);
+							stmt.setString(8, DocFormNumber);
+							stmt.setString(9, EffectiveDate);
+							stmt.setString(10, ApprovedFor);
+							stmt.setString(11, SubmissionType);
+							stmt.setString(12, MapperCompany);
+							stmt.setString(13, MapperContact);
+							stmt.setString(14, MapperPhone);
+							stmt.setString(15, MapperPhoneExt);
+							stmt.setString(16, MapperEmail);
+							stmt.setString(17, VcdbVersionDate);
+							stmt.setString(18, QdbVersionDate);
+							stmt.setString(19, PcdbVersionDate);
+							// ===================== APP ELEMENTS
+							// ================================
+							stmt.setString(20, action);
+							stmt.setString(21, id);
+							stmt.setString(22, ref);
+							stmt.setString(23, validate);
+							// ====================YMME INFO====================
+							stmt.setString(24, BaseVehicle_id);
+							stmt.setString(25, year_id);
+							stmt.setString(26, Make_id);
+							stmt.setString(27, make);
+							stmt.setString(28, Model_id);
+							stmt.setString(29, model);
+							// ===============SUBMODEL INFO================
+							stmt.setString(30, SubModel_id);
+							stmt.setString(31, sub_modelName);
+							// ===============Engine Info============
+							stmt.setString(32, EngineBase_id);
+							stmt.setString(33, liter);
+							stmt.setString(34, cylinder);
+							stmt.setString(35, block_type);
+							// ===============PartInfo=================
+							stmt.setString(36, PartType_id);
+							stmt.setString(37, p_name);
+							stmt.setString(38, Part_BrandAAIAID);
+							stmt.setString(39, Part);
+							stmt.setString(40, MfrLabel);
+							stmt.setString(41, Position_id);
+							// ==============================
+							stmt.setString(42, VehicleType_id);
+							stmt.setString(43, MfrBodyCode_id);
+							stmt.setString(44, BodyNumDoors_id);
+							stmt.setString(45, BodyType_id);
+							stmt.setString(46, DriveType_id);
+							stmt.setString(47, EngineDesignation_id);
+							stmt.setString(48, EngineVIN_id);
+							stmt.setString(49, EngineVersion_id);
+							stmt.setString(50, PowerOutput_id);
+
+							stmt.setString(51, EngineMfr_id);
+							stmt.setString(52, ValvesPerEngine_id);
+							stmt.setString(53, FuelDeliveryType_id);
+							stmt.setString(54, FuelDeliverySubType_id);
+							stmt.setString(55, FuelSystemControlType_id);
+							stmt.setString(56, FuelSystemDesign_id);
+							stmt.setString(57, Aspiration_id);
+							stmt.setString(58, CylinderHeadType_id);
+							stmt.setString(59, FuelType_id);
+							stmt.setString(60, IgnitionSystemType_id);
+
+							stmt.setString(61, TransmissionMfrCode_id);
+							stmt.setString(62, TransmissionBase_id);
+							stmt.setString(63, TransmissionType_id);
+							stmt.setString(64, TransmissionControlType_id);
+							stmt.setString(65, TransmissionNumSpeeds_id);
+							stmt.setString(66, TransElecControlled_id);
+							stmt.setString(67, TransmissionMfr_id);
+							stmt.setString(68, BedType_id);
+							stmt.setString(69, WheelBase_id);
+							stmt.setString(70, BrakeSystem_id);
+
+							stmt.setString(71, FrontBrakeType_id);
+							stmt.setString(72, RearBrakeType_id);
+							stmt.setString(73, BrakeABS_id);
+							stmt.setString(74, FrontSpringType_id);
+							stmt.setString(75, RearSpringType_id);
+							stmt.setString(76, SteeringSystem_id);
+							stmt.setString(77, SteeringType_id);
+							stmt.setString(78, Region_id);
+							stmt.setString(79, Qual_id);
+							stmt.setString(80, param_value);
+
+							stmt.setString(81, param_uom);
+							stmt.setString(82, text);
+							stmt.setString(83, Note_id);
+							stmt.setString(84, Note_lang);
+							stmt.setString(85, Note);
+							stmt.setString(86, Qty);
+							stmt.setString(87, DisplayOrder);
+							stmt.setString(88, AssetName);
+							stmt.setString(89, AssetItemOrder);
+							stmt.setString(90, AssetItemRef);
+
+							stmt.setString(91, Years_from);
+							stmt.setString(92, Years_to);
+							stmt.setString(93, RecordCount);
+							stmt.setString(94, actualFileName);
+							stmt.setDouble(95, version);
+
+							Transaction tx = session.beginTransaction();
+							int result = stmt.executeUpdate();
+							// System.out.println("no. of record affected::"+result);
+							tx.commit();
+
+						}
+
+					} catch (Exception e) {
+						e.printStackTrace();
+					}
+
+				} catch (Exception e) {
+					System.out.println("ReadXmlFiles Exception::" + e);
+
+				}
+
+			}
+			System.out.println("No of Records:::" + records);
+			Session session = HibernateConnectionFactory.getSessionInstance();
+			SQLQuery pstmt1 = session
+					.createSQLQuery("UPDATE XMLPARSE_STATUS SET RECORDS = ? WHERE XML_NAME = ?");
+
+			pstmt1.setLong(0, records);
+			pstmt1.setString(1, actualFileName);
+			Transaction tx = session.beginTransaction();
+			pstmt1.executeUpdate();
+			tx.commit();
+
+			SQLQuery pstmt2 = session
+					.createSQLQuery("UPDATE XMLPARSE_STATUS SET VERSION = ? WHERE XML_NAME = ?");
+
+			pstmt2.setDouble(0, version);
+			pstmt2.setString(1, actualFileName);
+			Transaction tx1 = session.beginTransaction();
+			pstmt2.executeUpdate();
+			tx1.commit();
+
+			System.out
+					.println("Your xml File Successfully inserted in dataBase...");
+			System.out
+					.println("Your xml File Successfully inserted in dataBase...");
+
+		} catch (Exception e) {
+
+			System.out.println("Exception in BigDataBank==" + e);
+			logger.error("Exception in BigDataBank", e);
+		}
+
+		// =====================================================================================
+
+	}
+
+}
+
+
+package com.parser;
+
+public class Footer {
+	private String RecordCount;
+
+	public Footer() {
+
+	}
+
+	public Footer(String RecordCount) {
+		this.RecordCount = RecordCount;
+	}
+
+	public String toString() {
+		StringBuffer sb = new StringBuffer();
+		sb.append(getRecordCount());
+		return sb.toString();
+	}
+
+	public String getRecordCount() {
+		return RecordCount;
+	}
+
+	public void setRecordCount(String recordCount) {
+		RecordCount = recordCount;
+	}
+
+}
+package com.parser;
+
+public class Header {
+	private String Company;
+	private String SenderName;
+	private String SenderPhone;
+	private String SenderPhoneExt;
+	private String TrasnsferDate;
+	private String BrandAAIAID;
+	private String DocumentTitle;
+	private String DocFormNumber;
+	private String EffectiveDate;
+	private String ApprovedFor;
+	private String SubmissionType;
+	private String MapperCompany;
+	private String MapperContact;
+	private String MapperPhone;
+	private String MapperPhoneExt;
+	private String MapperEmail;
+	private String VcdbVersionDate;
+	private String QcdbVersionDate;
+	private String PcdbVersionDate;
+
+	public Header() {
+
+	}
+
+	public Header(String Company, String SenderName, String SenderPhone,
+			String SenderPhoneExt, String TrasnsferDate, String BrandAAIAID,
+			String DocumentTitle, String DocFormNumber, String EffectiveDate,
+			String ApprovedFor, String SubmissionType, String MapperCompany,
+			String MapperContact, String MapperPhone, String MapperPhoneExt,
+			String MapperEmail, String VcdbVersionDate, String QcdbVersionDate,
+			String PcdbVersionDate) {
+		this.Company = Company;
+		this.SenderName = SenderName;
+		this.SenderPhone = SenderPhone;
+		this.SenderPhoneExt = SenderPhoneExt;
+		this.TrasnsferDate = TrasnsferDate;
+		this.BrandAAIAID = BrandAAIAID;
+		this.DocumentTitle = DocumentTitle;
+		this.DocFormNumber = DocFormNumber;
+		this.EffectiveDate = EffectiveDate;
+		this.SubmissionType = SubmissionType;
+		this.VcdbVersionDate = VcdbVersionDate;
+		this.QcdbVersionDate = QcdbVersionDate;
+		this.PcdbVersionDate = PcdbVersionDate;
+		this.ApprovedFor = ApprovedFor;
+		this.MapperCompany = MapperCompany;
+		this.MapperContact = MapperContact;
+		this.MapperPhone = MapperPhone;
+		this.MapperPhoneExt = MapperPhoneExt;
+		this.MapperEmail = MapperEmail;
+	}
+
+	public String toString() {
+		StringBuffer sb = new StringBuffer();
+		sb.append(getCompany());
+		sb.append("`");
+		sb.append(getSenderName());
+		sb.append("`");
+		sb.append(getSenderPhone());
+		sb.append("`");
+		sb.append(getSenderPhoneExt());
+		sb.append("`");
+		sb.append(getTrasnsferDate());
+		sb.append("`");
+		sb.append(getBrandAAIAID());
+		sb.append("`");
+		sb.append(getDocFormNumber());
+		sb.append("`");
+		sb.append(getDocumentTitle());
+		sb.append("`");
+		sb.append(getEffectiveDate());
+		sb.append("`");
+		sb.append(getApprovedFor());
+		sb.append("`");
+		sb.append(getSubmissionType());
+		sb.append("`");
+		sb.append(getMapperCompany());
+		sb.append("`");
+		sb.append(getMapperContact());
+		sb.append("`");
+		sb.append(getMapperPhone());
+		sb.append("`");
+		sb.append(getMapperPhoneExt());
+		sb.append("`");
+		sb.append(getMapperEmail());
+		sb.append("`");
+		sb.append(getVcdbVersionDate());
+		sb.append("`");
+		sb.append(getQcdbVersionDate());
+		sb.append("`");
+		sb.append(getPcdbVersionDate());
+		return sb.toString();
+	}
+
+	public String getCompany() {
+		return Company;
+	}
+
+	public void setCompany(String company) {
+		Company = company;
+	}
+
+	public String getSenderName() {
+		return SenderName;
+	}
+
+	public void setSenderName(String senderName) {
+		SenderName = senderName;
+	}
+
+	public String getSenderPhone() {
+		return SenderPhone;
+	}
+
+	public void setSenderPhone(String senderPhone) {
+		SenderPhone = senderPhone;
+	}
+
+	public String getTrasnsferDate() {
+		return TrasnsferDate;
+	}
+
+	public String getApprovedFor() {
+		return ApprovedFor;
+	}
+
+	public void setApprovedFor(String approvedFor) {
+		ApprovedFor = approvedFor;
+	}
+
+	public String getMapperCompany() {
+		return MapperCompany;
+	}
+
+	public void setMapperCompany(String mapperCompany) {
+		MapperCompany = mapperCompany;
+	}
+
+	public String getMapperContact() {
+		return MapperContact;
+	}
+
+	public void setMapperContact(String mapperContact) {
+		MapperContact = mapperContact;
+	}
+
+	public String getMapperPhone() {
+		return MapperPhone;
+	}
+
+	public void setMapperPhone(String mapperPhone) {
+		MapperPhone = mapperPhone;
+	}
+
+	public String getMapperEmail() {
+		return MapperEmail;
+	}
+
+	public void setMapperEmail(String mapperEmail) {
+		MapperEmail = mapperEmail;
+	}
+
+	public void setTrasnsferDate(String trasnsferDate) {
+		TrasnsferDate = trasnsferDate;
+	}
+
+	public String getBrandAAIAID() {
+		return BrandAAIAID;
+	}
+
+	public void setBrandAAIAID(String brandAAIAID) {
+		BrandAAIAID = brandAAIAID;
+	}
+
+	public String getDocumentTitle() {
+		return DocumentTitle;
+	}
+
+	public void setDocumentTitle(String documentTitle) {
+		DocumentTitle = documentTitle;
+	}
+
+	public String getEffectiveDate() {
+		return EffectiveDate;
+	}
+
+	public void setEffectiveDate(String effectiveDate) {
+		EffectiveDate = effectiveDate;
+	}
+
+	public String getSubmissionType() {
+		return SubmissionType;
+	}
+
+	public String getSenderPhoneExt() {
+		return SenderPhoneExt;
+	}
+
+	public void setSenderPhoneExt(String senderPhoneExt) {
+		SenderPhoneExt = senderPhoneExt;
+	}
+
+	public String getDocFormNumber() {
+		return DocFormNumber;
+	}
+
+	public void setDocFormNumber(String docFormNumber) {
+		DocFormNumber = docFormNumber;
+	}
+
+	public String getMapperPhoneExt() {
+		return MapperPhoneExt;
+	}
+
+	public void setMapperPhoneExt(String mapperPhoneExt) {
+		MapperPhoneExt = mapperPhoneExt;
+	}
+
+	public void setSubmissionType(String submissionType) {
+		SubmissionType = submissionType;
+	}
+
+	public String getVcdbVersionDate() {
+		return VcdbVersionDate;
+	}
+
+	public void setVcdbVersionDate(String vcdbVersionDate) {
+		VcdbVersionDate = vcdbVersionDate;
+	}
+
+	public String getQcdbVersionDate() {
+		return QcdbVersionDate;
+	}
+
+	public void setQcdbVersionDate(String qcdbVersionDate) {
+		QcdbVersionDate = qcdbVersionDate;
+	}
+
+	public String getPcdbVersionDate() {
+		return PcdbVersionDate;
+	}
+
+	public void setPcdbVersionDate(String pcdbVersionDate) {
+		PcdbVersionDate = pcdbVersionDate;
+	}
+
+	// ==============================
+
+}
+package com.parser;
+
+import java.util.List;
+
+import org.hibernate.SQLQuery;
+import org.hibernate.Session;
+import org.hibernate.type.LongType;
+import org.hibernate.type.StringType;
+import com.shift.mobility.database.HibernateConnectionFactory;
+
+public class App {
+	private String action = " ";
+	private String id = " ";
+	private String ref = " ";
+	private String validate = " ";
+	private String BaseVehicle_id = " ";
+	private String Make_id = " ";
+	private String Model_id = " ";
+	private String SubModel_id;
+	private String VehicleType_id = " ";
+	private String MfrBodyCode_id = " ";
+	private String BodyNumDoors_id = " ";
+	private String BodyType_id = " ";
+	private String DriveType_id = " ";
+	private String EngineBase_id = " ";
+	private String EngineDesignation_id = " ";
+	private String EngineVIN_id = " ";
+	private String EngineVersion_id = " ";
+	private String PowerOutput_id = " ";
+	private String EngineMfr_id = " ";
+	private String ValvesPerEngine_id = " ";
+	private String FuelDeliveryType_id = " ";
+	private String FuelDeliverySubType_id = " ";
+	private String FuelSystemControlType_id = " ";
+	private String FuelSystemDesign_id = " ";
+	private String Aspiration_id = " ";
+	private String CylinderHeadType_id = " ";
+	private String FuelType_id = " ";
+	private String IgnitionSystemType_id = " ";
+	private String TransmissionMfrCode_id = " ";
+	private String TransmissionBase_id = " ";
+	private String TransmissionType_id = " ";
+	private String TransmissionControlType_id = " ";
+	private String TransmissionNumSpeeds_id = " ";
+	private String TransElecControlled_id = " ";
+	private String TransmissionMfr_id = " ";
+	private String BedLength_id = " ";
+	private String BedType_id = " ";
+	private String WheelBase_id = " ";
+	private String BrakeSystem_id = " ";
+	private String FrontBrakeType_id = " ";
+	private String RearBrakeType_id = " ";
+	private String BrakeABS_id = " ";
+	private String FrontSpringType_id = " ";
+	private String RearSpringType_id = " ";
+	private String SteeringSystem_id = " ";
+	private String SteeringType_id = " ";
+	private String Region_id = " ";
+	private String Qual_id = " ";
+	private String param_value = " ";
+	private String param_uom = " ";
+	private String text = " ";
+	private String Note_id = " ";
+	private String Note_lang = " ";
+	private String Note = " ";
+	private String Qty = " ";
+	private String PartType_id = " ";
+	private String Part_BrandAAIAID = " ";
+	private String Part = " ";
+	private String MfrLabel = " ";
+	private String Position_id = " ";
+	private String DisplayOrder = " ";
+	private String AssetName = " ";
+	private String AssetItemOrder = " ";
+	private String AssetItemRef = " ";
+	private String Years_from = " ";
+	private String Years_to = " ";
+
+	public App() {
+
+	}
+
+	public App(String action, String id, String ref, String validate,
+			String BaseVehicle_id, String Make_id, String Model_id,
+			String SubModel_id, String VehicleType_id, String MfrBodyCode_id,
+			String BodyNumDoors_id, String BodyType_id, String DriveType_id,
+			String EngineBase_id, String EngineDesignation_id,
+			String EngineVIN_id, String EngineVersion_id,
+			String PowerOutput_id, String EngineMfr_id,
+			String ValvesPerEngine_id, String FuelDeliveryType_id,
+			String FuelDeliverySubType_id, String FuelSystemControlType_id,
+			String FuelSystemDesign_id, String Aspiration_id,
+			String CylinderHeadType_id, String FuelType_id,
+			String IgnitionSystemType_id, String TransmissionMfrCode_id,
+			String TransmissionBase_id, String TransmissionType_id,
+			String TransmissionControlType_id, String TransmissionNumSpeeds_id,
+			String TransElecControlled_id, String TransmissionMfr_id,
+			String BedLength_id, String BedType_id, String WheelBase_id,
+			String BrakeSystem_id, String FrontBrakeType_id,
+			String RearBrakeType_id, String BrakeABS_id,
+			String FrontSpringType_id, String RearSpringType_id,
+			String SteeringSystem_id, String SteeringType_id, String Region_id,
+			String Qual_id, String param_value, String param_uom, String text,
+			String Note_id, String Note_lang, String Note, String Qty,
+			String PartType_id, String Part_BrandAAIAID, String Part,
+			String MfrLabel, String Position_id, String DisplayOrder,
+			String AssetName, String AssetItemOrder, String AssetItemRef,
+			String Years_from, String Years_to) {
+		this.action = action;
+		this.id = id;
+		this.ref = ref;
+		this.validate = validate;
+		this.BaseVehicle_id = BaseVehicle_id;
+		this.Make_id = Make_id;
+		this.Model_id = Model_id;
+		this.SubModel_id = SubModel_id;
+		this.VehicleType_id = VehicleType_id;
+		this.MfrBodyCode_id = MfrBodyCode_id;
+		this.BodyNumDoors_id = BodyNumDoors_id;
+		this.BodyType_id = BodyType_id;
+		this.DriveType_id = DriveType_id;
+		this.EngineBase_id = EngineBase_id;
+		this.EngineDesignation_id = EngineDesignation_id;
+		this.EngineVIN_id = EngineVIN_id;
+		this.EngineVersion_id = EngineVersion_id;
+		this.PowerOutput_id = PowerOutput_id;
+		this.EngineMfr_id = EngineMfr_id;
+		this.ValvesPerEngine_id = ValvesPerEngine_id;
+		this.FuelDeliveryType_id = FuelDeliveryType_id;
+		this.FuelDeliverySubType_id = FuelDeliverySubType_id;
+		this.FuelSystemControlType_id = FuelSystemControlType_id;
+		this.FuelSystemDesign_id = FuelSystemDesign_id;
+		this.Aspiration_id = Aspiration_id;
+		this.CylinderHeadType_id = CylinderHeadType_id;
+		this.FuelType_id = FuelType_id;
+		this.IgnitionSystemType_id = IgnitionSystemType_id;
+		this.TransmissionMfrCode_id = TransmissionMfrCode_id;
+		this.TransmissionBase_id = TransmissionBase_id;
+		this.TransmissionNumSpeeds_id = TransmissionNumSpeeds_id;
+		this.TransElecControlled_id = TransElecControlled_id;
+		this.TransmissionMfr_id = TransmissionMfr_id;
+		this.BedLength_id = BedLength_id;
+		this.BedType_id = BedType_id;
+		this.WheelBase_id = WheelBase_id;
+		this.BrakeSystem_id = BrakeSystem_id;
+
+		this.FrontBrakeType_id = FrontBrakeType_id;
+
+		this.RearBrakeType_id = RearBrakeType_id;
+		this.BrakeABS_id = BrakeABS_id;
+		this.FrontSpringType_id = FrontSpringType_id;
+		this.RearSpringType_id = RearSpringType_id;
+
+		this.SteeringSystem_id = SteeringSystem_id;
+		this.SteeringType_id = SteeringType_id;
+		this.Region_id = Region_id;
+		this.Qual_id = Qual_id;
+		this.param_value = param_value;
+
+		this.param_uom = param_uom;
+		this.text = text;
+		this.Note_id = Note_id;
+		this.Note_lang = Note_lang;
+		this.Note = Note;
+		this.Qty = Qty;
+		this.PartType_id = PartType_id;
+		this.Part_BrandAAIAID = Part_BrandAAIAID;
+		this.Part = Part;
+		this.MfrLabel = MfrLabel;
+		this.Position_id = Position_id;
+		this.DisplayOrder = DisplayOrder;
+		this.AssetName = AssetName;
+		this.AssetItemOrder = AssetItemOrder;
+		this.AssetItemRef = AssetItemRef;
+		this.Years_from = Years_from;
+		this.Years_to = Years_to;
+
+	}
+
+	@SuppressWarnings("unchecked")
+	public String toString() {
+		// ================= Fetch Data From Part
+		// Table===================================
+
+		String part_Name = " ";
+		int year_id = 0;
+		String make = " ";
+		String model = " ";
+		String sub_modelName = " ";
+		String liter = " ";
+		String cylinder = " ";
+		String block_type = " ";
+
+		try {
+
+			Session session = HibernateConnectionFactory.getSessionInstance();
+
+			if (PartType_id.equalsIgnoreCase(" ") || PartType_id == " "
+					|| PartType_id == null) {
+				PartType_id = " ";
+
+				// System.out.println("PartType_id IN IF  =" + PartType_id);
+			} else {
+				try {
+					// System.out.println("PartType_id IN IF  =" + PartType_id);
+					SQLQuery query = session.createSQLQuery(
+							"select distinct PARTTERMINOLOGYNAME from PARTS where PartTerminologyID='"
+									+ PartType_id + "'").addScalar(
+							"PARTTERMINOLOGYNAME", new StringType());
+
+					List<Object[]> rows = query.list();
+					for (Object row : rows) {
+
+						part_Name = (String) row;
+
+						// System.out.println("part_Name===================" +
+						// row);
+					}
+
+				} catch (Exception e) {
+					System.out.println("Exception in App PartTypeId=" + e);
+				}
+			}
+
+			if (SubModel_id == null || SubModel_id == " ") {
+				SubModel_id = " ";
+
+			} else {
+				try {
+
+					SQLQuery query = session.createSQLQuery(
+							"select distinct  SUBMODELNAME from VROOM_SUBMODEL where SUBMODELID='"
+									+ SubModel_id + "'").addScalar(
+							"SUBMODELNAME", new StringType());
+
+					List<Object[]> rows = query.list();
+					for (Object row : rows) {
+
+						sub_modelName = (String) row;
+
+						// System.out.println("sub_modelName==================="+
+						// row);
+					}
+
+				} catch (Exception e) {
+
+				}
+			}
+
+			if (EngineBase_id.equalsIgnoreCase(" ") || EngineBase_id == " "
+					|| EngineBase_id == null) {
+				EngineBase_id = " ";
+
+			}
+
+			else {
+
+				try {
+
+					SQLQuery query = session
+							.createSQLQuery(
+									"select distinct LITER,CYLINDERS,BLOCKTYPE from VROOM_ENGINEBASE where ENGINEBASEID='"
+											+ EngineBase_id + "'").addScalar(
+									"LITER", new StringType()).addScalar(
+									"CYLINDERS", new StringType()).addScalar(
+									"BLOCKTYPE", new StringType());
+
+					List<Object[]> rows = query.list();
+					for (Object[] row : rows) {
+
+						liter = (String) row[0];
+						cylinder = (String) row[1];
+						block_type = (String) row[2];
+						// System.out.println("liter===================" +
+						// (String) row[0]);
+					}
+
+				} catch (Exception e) {
+					System.out.println("Statement3 Execption in AppStatement3="
+							+ e);
+				}
+
+			}
+
+			if (BaseVehicle_id.equalsIgnoreCase(" ") || BaseVehicle_id == " "
+					|| BaseVehicle_id == null) {
+				BaseVehicle_id = " ";
+
+			}
+
+			else {
+
+				try {
+
+					SQLQuery query = session.createSQLQuery(
+							"select distinct YEARID,MAKE,MODEL from BIG_VEHICLES where BASEVEHICLEID='"
+									+ BaseVehicle_id + "'").addScalar("YEARID",
+							new LongType()).addScalar("MAKE", new StringType())
+							.addScalar("MODEL", new StringType());
+
+					List<Object[]> rows = query.list();
+					for (Object[] row : rows) {
+
+						year_id = Integer.parseInt("" + row[0]);
+						make = (String) row[1];
+						model = (String) row[2];
+
+						/*
+						 * System.out.println("Year===================" +
+						 * Integer.parseInt("" + row[0]) + "Make=" + (String)
+						 * row[1] + "Model=" + (String) row[2]);
+						 */
+					}
+
+				} finally {
+					try {
+
+					} catch (Exception e) {
+						System.out
+								.println("Statement Execption in Appstatement="
+										+ e);
+
+					}
+
+				}
+
+			}
+
+			if (Make_id == null || Make_id == " ") {
+				Make_id = " ";
+
+			} else {
+				try {
+
+					SQLQuery query = session.createSQLQuery(
+							"select distinct MAKENAME from MAKE where MAKEID='"
+									+ Make_id + "'").addScalar("MAKENAME",
+							new StringType());
+
+					List<Object[]> rows = query.list();
+					for (Object row : rows) {
+
+						make = (String) row;
+
+						// System.out.println("Make=" + (String) row);
+					}
+
+				} catch (Exception e) {
+
+				}
+			}
+
+			if (Model_id == null || Model_id == " ") {
+				Model_id = " ";
+
+			} else {
+				try {
+
+					SQLQuery query = session.createSQLQuery(
+							"select distinct  MODELNAME from VROOM_MODEL where MODELID='"
+									+ Model_id + "'").addScalar("MODELNAME",
+							new StringType());
+
+					List<Object[]> rows = query.list();
+					for (Object row : rows) {
+
+						model = (String) row;
+
+						// System.out.println("model=" + (String) row);
+					}
+
+				} catch (Exception e) {
+
+				}
+			}
+		}
+
+		catch (Exception e) {
+			System.out.println("App Exception=" + e);
+		}
+
+		// ======================================================
+		StringBuffer sb = new StringBuffer();
+
+		sb.append(getAction());
+		sb.append("`");
+		sb.append(getId());
+		sb.append("`");
+		sb.append(getRef());
+		sb.append("`");
+		sb.append(getValidate());
+		sb.append("`");
+		sb.append(getBaseVehicle_id());
+		sb.append("`");
+		sb.append(year_id);
+		sb.append("`");
+		sb.append(getMake_id());
+		sb.append("`");
+		sb.append(make);
+		sb.append("`");
+		sb.append(getModel_id());
+		sb.append("`");
+		sb.append(model);
+		sb.append("`");
+		sb.append(getSubModel_id());
+		sb.append("`");
+		sb.append(sub_modelName);
+		sb.append("`");
+		sb.append(liter);
+		sb.append("`");
+		sb.append(cylinder);
+		sb.append("`");
+		sb.append(block_type);
+		// =================================== search
+		sb.append("`");
+		sb.append(getVehicleType_id());
+		sb.append("`");
+		sb.append(getMfrBodyCode_id());
+		sb.append("`");
+		sb.append(getBodyNumDoors_id());
+		sb.append("`");
+		sb.append(getBodyType_id());
+		sb.append("`");
+		sb.append(getDriveType_id());
+		sb.append("`");
+		sb.append(getEngineBase_id());
+		sb.append("`");
+		sb.append(getEngineDesignation_id());
+		sb.append("`");
+		sb.append(getEngineVIN_id());
+		sb.append("`");
+		sb.append(getEngineVersion_id());
+		sb.append("`");
+		sb.append(getPowerOutput_id());
+		sb.append("`");
+		sb.append(getEngineMfr_id());
+		sb.append("`");
+		sb.append(getValvesPerEngine_id());
+		sb.append("`");
+		sb.append(getFuelDeliveryType_id());
+		sb.append("`");
+		sb.append(getFuelDeliverySubType_id());
+		sb.append("`");
+		sb.append(getFuelSystemControlType_id());
+		sb.append("`");
+		sb.append(getFuelSystemDesign_id());
+		sb.append("`");
+		sb.append(getAspiration_id());
+		sb.append("`");
+		sb.append(getCylinderHeadType_id());
+		sb.append("`");
+		sb.append(getFuelType_id());
+		sb.append("`");
+		sb.append(getIgnitionSystemType_id());
+		sb.append("`");
+		sb.append(getTransmissionMfrCode_id());
+		sb.append("`");
+		sb.append(getTransmissionBase_id());
+		sb.append("`");
+		sb.append(getTransmissionType_id());
+		sb.append("`");
+		sb.append(getTransmissionControlType_id());
+		sb.append("`");
+		sb.append(getTransmissionNumSpeeds_id());
+		sb.append("`");
+		sb.append(getTransElecControlled_id());
+		sb.append("`");
+		sb.append(getTransmissionMfr_id());
+		sb.append("`");
+		sb.append(getBedLength_id());
+		sb.append("`");
+		sb.append(getBedType_id());
+		sb.append("`");
+		sb.append(getWheelBase_id());
+		sb.append("`");
+		sb.append(getBrakeSystem_id());
+		sb.append("`");
+		sb.append(getFrontBrakeType_id());
+		sb.append("`");
+		sb.append(getRearBrakeType_id());
+		sb.append("`");
+		sb.append(getBrakeABS_id());
+		sb.append("`");
+		sb.append(getFrontSpringType_id());
+		sb.append("`");
+		sb.append(getRearSpringType_id());
+		sb.append("`");
+		sb.append(getSteeringSystem_id());
+		sb.append("`");
+		sb.append(getSteeringType_id());
+		sb.append("`");
+		sb.append(getRegion_id());
+		sb.append("`");
+		sb.append(getQual_id());
+		sb.append("`");
+		sb.append(getParam_value());
+		sb.append("`");
+		sb.append(getParam_uom());
+		sb.append("`");
+		sb.append(getText());
+		sb.append("`");
+		sb.append(getNote_id());
+		sb.append("`");
+		sb.append(getNote_lang());
+		sb.append("`");
+		sb.append(getNote());
+		sb.append("`");
+		sb.append(getQty());
+		sb.append("`");
+		sb.append(getPartType_id());
+		sb.append("`");
+		sb.append(part_Name);
+		sb.append("`");
+		sb.append(getPart_BrandAAIAID());
+		sb.append("`");
+		sb.append(getPart());
+		sb.append("`");
+		sb.append(getMfrLabel());
+		sb.append("`");
+		sb.append(getPosition_id());
+		sb.append("`");
+		sb.append(getDisplayOrder());
+		sb.append("`");
+		sb.append(getAssetName());
+		sb.append("`");
+		sb.append(getAssetItemOrder());
+		sb.append("`");
+		sb.append(getAssetItemRef());
+		sb.append("`");
+		sb.append(getYears_from());
+		sb.append("`");
+		sb.append(getYears_to());
+
+		// ==================
+		// System.out.println("Note id==============" + Note_id);
+
+		return sb.toString();
+
+	}
+
+	// ============================== setter and
+	// getter===========================
+	public String getAction() {
+		return action;
+	}
+
+	public void setAction(String action) {
+		this.action = action;
+	}
+
+	public String getId() {
+		return id;
+	}
+
+	public void setId(String id) {
+		this.id = id;
+	}
+
+	public String getRef() {
+		return ref;
+	}
+
+	public void setRef(String ref) {
+		this.ref = ref;
+	}
+
+	public String getValidate() {
+		return validate;
+	}
+
+	public void setValidate(String validate) {
+		this.validate = validate;
+	}
+
+	public String getBaseVehicle_id() {
+		return BaseVehicle_id;
+	}
+
+	public void setBaseVehicle_id(String baseVehicleId) {
+		BaseVehicle_id = baseVehicleId;
+	}
+
+	public String getMake_id() {
+		return Make_id;
+	}
+
+	public void setMake_id(String makeId) {
+		Make_id = makeId;
+	}
+
+	public String getModel_id() {
+		return Model_id;
+	}
+
+	public void setModel_id(String modelId) {
+		Model_id = modelId;
+	}
+
+	public String getSubModel_id() {
+		return SubModel_id;
+	}
+
+	public void setSubModel_id(String subModelId) {
+		SubModel_id = subModelId;
+	}
+
+	public String getVehicleType_id() {
+		return VehicleType_id;
+	}
+
+	public void setVehicleType_id(String vehicleTypeId) {
+		VehicleType_id = vehicleTypeId;
+	}
+
+	public String getMfrBodyCode_id() {
+		return MfrBodyCode_id;
+	}
+
+	public void setMfrBodyCode_id(String mfrBodyCodeId) {
+		MfrBodyCode_id = mfrBodyCodeId;
+	}
+
+	public String getBodyNumDoors_id() {
+		return BodyNumDoors_id;
+	}
+
+	public void setBodyNumDoors_id(String bodyNumDoorsId) {
+		BodyNumDoors_id = bodyNumDoorsId;
+	}
+
+	public String getBodyType_id() {
+		return BodyType_id;
+	}
+
+	public void setBodyType_id(String bodyTypeId) {
+		BodyType_id = bodyTypeId;
+	}
+
+	public String getDriveType_id() {
+		return DriveType_id;
+	}
+
+	public void setDriveType_id(String driveTypeId) {
+		DriveType_id = driveTypeId;
+	}
+
+	public String getEngineBase_id() {
+		return EngineBase_id;
+	}
+
+	public void setEngineBase_id(String engineBaseId) {
+		EngineBase_id = engineBaseId;
+	}
+
+	public String getEngineDesignation_id() {
+		return EngineDesignation_id;
+	}
+
+	public void setEngineDesignation_id(String engineDesignationId) {
+		EngineDesignation_id = engineDesignationId;
+	}
+
+	public String getEngineVIN_id() {
+		return EngineVIN_id;
+	}
+
+	public void setEngineVIN_id(String engineVINId) {
+		EngineVIN_id = engineVINId;
+	}
+
+	public String getEngineVersion_id() {
+		return EngineVersion_id;
+	}
+
+	public void setEngineVersion_id(String engineVersionId) {
+		EngineVersion_id = engineVersionId;
+	}
+
+	public String getPowerOutput_id() {
+		return PowerOutput_id;
+	}
+
+	public void setPowerOutput_id(String powerOutputId) {
+		PowerOutput_id = powerOutputId;
+	}
+
+	public String getEngineMfr_id() {
+		return EngineMfr_id;
+	}
+
+	public void setEngineMfr_id(String engineMfrId) {
+		EngineMfr_id = engineMfrId;
+	}
+
+	public String getValvesPerEngine_id() {
+		return ValvesPerEngine_id;
+	}
+
+	public void setValvesPerEngine_id(String valvesPerEngineId) {
+		ValvesPerEngine_id = valvesPerEngineId;
+	}
+
+	public String getFuelDeliveryType_id() {
+		return FuelDeliveryType_id;
+	}
+
+	public void setFuelDeliveryType_id(String fuelDeliveryTypeId) {
+		FuelDeliveryType_id = fuelDeliveryTypeId;
+	}
+
+	public String getFuelDeliverySubType_id() {
+		return FuelDeliverySubType_id;
+	}
+
+	public void setFuelDeliverySubType_id(String fuelDeliverySubTypeId) {
+		FuelDeliverySubType_id = fuelDeliverySubTypeId;
+	}
+
+	public String getFuelSystemControlType_id() {
+		return FuelSystemControlType_id;
+	}
+
+	public void setFuelSystemControlType_id(String fuelSystemControlTypeId) {
+		FuelSystemControlType_id = fuelSystemControlTypeId;
+	}
+
+	public String getFuelSystemDesign_id() {
+		return FuelSystemDesign_id;
+	}
+
+	public void setFuelSystemDesign_id(String fuelSystemDesignId) {
+		FuelSystemDesign_id = fuelSystemDesignId;
+	}
+
+	public String getAspiration_id() {
+		return Aspiration_id;
+	}
+
+	public void setAspiration_id(String aspirationId) {
+		Aspiration_id = aspirationId;
+	}
+
+	public String getCylinderHeadType_id() {
+		return CylinderHeadType_id;
+	}
+
+	public void setCylinderHeadType_id(String cylinderHeadTypeId) {
+		CylinderHeadType_id = cylinderHeadTypeId;
+	}
+
+	public String getFuelType_id() {
+		return FuelType_id;
+	}
+
+	public void setFuelType_id(String fuelTypeId) {
+		FuelType_id = fuelTypeId;
+	}
+
+	public String getIgnitionSystemType_id() {
+		return IgnitionSystemType_id;
+	}
+
+	public void setIgnitionSystemType_id(String ignitionSystemTypeId) {
+		IgnitionSystemType_id = ignitionSystemTypeId;
+	}
+
+	public String getTransmissionMfrCode_id() {
+		return TransmissionMfrCode_id;
+	}
+
+	public void setTransmissionMfrCode_id(String transmissionMfrCodeId) {
+		TransmissionMfrCode_id = transmissionMfrCodeId;
+	}
+
+	public String getTransmissionBase_id() {
+		return TransmissionBase_id;
+	}
+
+	public void setTransmissionBase_id(String transmissionBaseId) {
+		TransmissionBase_id = transmissionBaseId;
+	}
+
+	public String getTransmissionType_id() {
+		return TransmissionType_id;
+	}
+
+	public void setTransmissionType_id(String transmissionTypeId) {
+		TransmissionType_id = transmissionTypeId;
+	}
+
+	public String getTransmissionControlType_id() {
+		return TransmissionControlType_id;
+	}
+
+	public void setTransmissionControlType_id(String transmissionControlTypeId) {
+		TransmissionControlType_id = transmissionControlTypeId;
+	}
+
+	public String getTransmissionNumSpeeds_id() {
+		return TransmissionNumSpeeds_id;
+	}
+
+	public void setTransmissionNumSpeeds_id(String transmissionNumSpeedsId) {
+		TransmissionNumSpeeds_id = transmissionNumSpeedsId;
+	}
+
+	public String getTransElecControlled_id() {
+		return TransElecControlled_id;
+	}
+
+	public void setTransElecControlled_id(String transElecControlledId) {
+		TransElecControlled_id = transElecControlledId;
+	}
+
+	public String getTransmissionMfr_id() {
+		return TransmissionMfr_id;
+	}
+
+	public void setTransmissionMfr_id(String transmissionMfrId) {
+		TransmissionMfr_id = transmissionMfrId;
+	}
+
+	public String getBedLength_id() {
+		return BedLength_id;
+	}
+
+	public void setBedLength_id(String bedLengthId) {
+		BedLength_id = bedLengthId;
+	}
+
+	public String getBedType_id() {
+		return BedType_id;
+	}
+
+	public void setBedType_id(String bedTypeId) {
+		BedType_id = bedTypeId;
+	}
+
+	public String getWheelBase_id() {
+		return WheelBase_id;
+	}
+
+	public void setWheelBase_id(String wheelBaseId) {
+		WheelBase_id = wheelBaseId;
+	}
+
+	public String getBrakeSystem_id() {
+		return BrakeSystem_id;
+	}
+
+	public void setBrakeSystem_id(String brakeSystemId) {
+		BrakeSystem_id = brakeSystemId;
+	}
+
+	public String getFrontBrakeType_id() {
+		return FrontBrakeType_id;
+	}
+
+	public void setFrontBrakeType_id(String frontBrakeTypeId) {
+		FrontBrakeType_id = frontBrakeTypeId;
+	}
+
+	public String getRearBrakeType_id() {
+		return RearBrakeType_id;
+	}
+
+	public void setRearBrakeType_id(String rearBrakeTypeId) {
+		RearBrakeType_id = rearBrakeTypeId;
+	}
+
+	public String getBrakeABS_id() {
+		return BrakeABS_id;
+	}
+
+	public void setBrakeABS_id(String brakeABSId) {
+		BrakeABS_id = brakeABSId;
+	}
+
+	public String getFrontSpringType_id() {
+		return FrontSpringType_id;
+	}
+
+	public void setFrontSpringType_id(String frontSpringTypeId) {
+		FrontSpringType_id = frontSpringTypeId;
+	}
+
+	public String getRearSpringType_id() {
+		return RearSpringType_id;
+	}
+
+	public void setRearSpringType_id(String rearSpringTypeId) {
+		RearSpringType_id = rearSpringTypeId;
+	}
+
+	public String getSteeringSystem_id() {
+		return SteeringSystem_id;
+	}
+
+	public void setSteeringSystem_id(String steeringSystemId) {
+		SteeringSystem_id = steeringSystemId;
+	}
+
+	public String getSteeringType_id() {
+		return SteeringType_id;
+	}
+
+	public void setSteeringType_id(String steeringTypeId) {
+		SteeringType_id = steeringTypeId;
+	}
+
+	public String getRegion_id() {
+		return Region_id;
+	}
+
+	public void setRegion_id(String regionId) {
+		Region_id = regionId;
+	}
+
+	public String getQual_id() {
+		return Qual_id;
+	}
+
+	public void setQual_id(String qualId) {
+		Qual_id = qualId;
+	}
+
+	public String getParam_value() {
+		return param_value;
+	}
+
+	public void setParam_value(String paramValue) {
+		param_value = paramValue;
+	}
+
+	public String getParam_uom() {
+		return param_uom;
+	}
+
+	public void setParam_uom(String paramUom) {
+		param_uom = paramUom;
+	}
+
+	public String getText() {
+		return text;
+	}
+
+	public void setText(String text) {
+		this.text = text;
+	}
+
+	public String getNote_id() {
+		return Note_id;
+	}
+
+	public void setNote_id(String noteId) {
+		Note_id = noteId;
+	}
+
+	public String getNote_lang() {
+		return Note_lang;
+	}
+
+	public void setNote_lang(String noteLang) {
+		Note_lang = noteLang;
+	}
+
+	public String getNote() {
+		return Note;
+	}
+
+	public void setNote(String note) {
+		Note = note;
+	}
+
+	public String getQty() {
+		return Qty;
+	}
+
+	public void setQty(String qty) {
+		Qty = qty;
+	}
+
+	public String getPartType_id() {
+		return PartType_id;
+	}
+
+	public void setPartType_id(String partTypeId) {
+		PartType_id = partTypeId;
+	}
+
+	public String getPart_BrandAAIAID() {
+		return Part_BrandAAIAID;
+	}
+
+	public void setPart_BrandAAIAID(String partBrandAAIAID) {
+		Part_BrandAAIAID = partBrandAAIAID;
+	}
+
+	public String getPart() {
+		return Part;
+	}
+
+	public void setPart(String part) {
+		Part = part;
+	}
+
+	public String getMfrLabel() {
+		return MfrLabel;
+	}
+
+	public void setMfrLabel(String mfrLabel) {
+		MfrLabel = mfrLabel;
+	}
+
+	public String getPosition_id() {
+		return Position_id;
+	}
+
+	public void setPosition_id(String positionId) {
+		Position_id = positionId;
+	}
+
+	public String getDisplayOrder() {
+		return DisplayOrder;
+	}
+
+	public void setDisplayOrder(String displayOrder) {
+		DisplayOrder = displayOrder;
+	}
+
+	public String getAssetName() {
+		return AssetName;
+	}
+
+	public void setAssetName(String assetName) {
+		AssetName = assetName;
+	}
+
+	public String getAssetItemOrder() {
+		return AssetItemOrder;
+	}
+
+	public void setAssetItemOrder(String assetItemOrder) {
+		AssetItemOrder = assetItemOrder;
+	}
+
+	public String getAssetItemRef() {
+		return AssetItemRef;
+	}
+
+	public void setAssetItemRef(String assetItemRef) {
+		AssetItemRef = assetItemRef;
+	}
+
+	public String getYears_from() {
+		return Years_from;
+	}
+
+	public void setYears_from(String yearsFrom) {
+		Years_from = yearsFrom;
+	}
+
+	public String getYears_to() {
+		return Years_to;
+	}
+
+	public void setYears_to(String yearsTo) {
+		Years_to = yearsTo;
+	}
+
+	// =================================
+
+}
+
